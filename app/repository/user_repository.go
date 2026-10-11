@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"strings"
-	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -113,14 +112,13 @@ func (r *userPostgresRepository) FindAllCursor(ctx context.Context, q model.Curs
 		argCount++
 	}
 
-	// Keyset condition: (created_at, id) < (cursor.CreatedAt, cursor.ID) for DESC or > for ASC
 	if !cursor.CreatedAt.IsZero() && cursor.ID > 0 {
 		orderDir := strings.ToUpper(q.Order)
 		op := "<"
 		if orderDir == "ASC" {
 			op = ">"
 		}
-		whereClauses = append(whereClauses, fmt.Sprintf("(created_at, id) %s ($\%d, $%d)", op, argCount, argCount+1))
+		whereClauses = append(whereClauses, fmt.Sprintf("(created_at, id) %s ($%d, $%d)", op, argCount, argCount+1))
 		args = append(args, cursor.CreatedAt, cursor.ID)
 		argCount += 2
 	}
@@ -141,7 +139,7 @@ func (r *userPostgresRepository) FindAllCursor(ctx context.Context, q model.Curs
 		"SELECT id, username, email, password, role, is_active, created_at FROM users WHERE %s ORDER BY %s %s, id %s LIMIT $%d",
 		whereStr, sortCol, orderDir, orderDir, argCount,
 	)
-	args = append(args, limit+1) // Fetch limit + 1 to check if there is a next page
+	args = append(args, limit+1)
 
 	rows, err := r.pool.Query(ctx, dataQuery, args...)
 	if err != nil {
@@ -164,7 +162,7 @@ func (r *userPostgresRepository) FindAllCursor(ctx context.Context, q model.Curs
 func (r *userPostgresRepository) FindByID(ctx context.Context, id int) (model.User, error) {
 	var u model.User
 	err := r.pool.QueryRow(ctx,
-		`SELECT id, username, email, password, role, is_active, created_at FROM users WHERE id = $1`, id,
+		"SELECT id, username, email, password, role, is_active, created_at FROM users WHERE id = $1", id,
 	).Scan(&u.ID, &u.Username, &u.Email, &u.Password, &u.Role, &u.IsActive, &u.CreatedAt)
 
 	if err != nil {
@@ -179,7 +177,7 @@ func (r *userPostgresRepository) FindByID(ctx context.Context, id int) (model.Us
 func (r *userPostgresRepository) FindByUsername(ctx context.Context, username string) (model.User, error) {
 	var u model.User
 	err := r.pool.QueryRow(ctx,
-		`SELECT id, username, email, password, role, is_active, created_at FROM users WHERE LOWER(username) = LOWER($1)`, username,
+		"SELECT id, username, email, password, role, is_active, created_at FROM users WHERE LOWER(username) = LOWER($1)", username,
 	).Scan(&u.ID, &u.Username, &u.Email, &u.Password, &u.Role, &u.IsActive, &u.CreatedAt)
 
 	if err != nil {
@@ -193,7 +191,7 @@ func (r *userPostgresRepository) FindByUsername(ctx context.Context, username st
 
 func (r *userPostgresRepository) Create(ctx context.Context, u model.User) (model.User, error) {
 	err := r.pool.QueryRow(ctx,
-		`INSERT INTO users (username, email, password, role, is_active) VALUES ($1, $2, $3, $4, $5) RETURNING id, created_at`,
+		"INSERT INTO users (username, email, password, role, is_active) VALUES ($1, $2, $3, $4, $5) RETURNING id, created_at",
 		u.Username, u.Email, u.Password, u.Role, u.IsActive,
 	).Scan(&u.ID, &u.CreatedAt)
 
@@ -208,7 +206,7 @@ func (r *userPostgresRepository) Create(ctx context.Context, u model.User) (mode
 
 func (r *userPostgresRepository) Update(ctx context.Context, u model.User) (model.User, error) {
 	err := r.pool.QueryRow(ctx,
-		`UPDATE users SET username = $1, email = $2, is_active = $3 WHERE id = $4 RETURNING created_at, role`,
+		"UPDATE users SET username = $1, email = $2, is_active = $3 WHERE id = $4 RETURNING created_at, role",
 		u.Username, u.Email, u.IsActive, u.ID,
 	).Scan(&u.CreatedAt, &u.Role)
 
@@ -225,7 +223,7 @@ func (r *userPostgresRepository) Update(ctx context.Context, u model.User) (mode
 }
 
 func (r *userPostgresRepository) Delete(ctx context.Context, id int) error {
-	tag, err := r.pool.Exec(ctx, `DELETE FROM users WHERE id = $1`, id)
+	tag, err := r.pool.Exec(ctx, "DELETE FROM users WHERE id = $1", id)
 	if err != nil {
 		return fmt.Errorf("hapus user: %w", err)
 	}

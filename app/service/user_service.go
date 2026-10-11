@@ -51,12 +51,12 @@ func (s *UserService) List(c *fiber.Ctx) error {
 
 	if len(users) > query.Limit {
 		hasMore = true
-		users = users[:query.Limit] // Potong kelebihan 1 data
+		users = users[:query.Limit]
 		lastUser := users[len(users)-1]
 		nextCursor = helper.EncodeCursor(lastUser.CreatedAt, lastUser.ID)
 	}
 
-	return helper.SuccessWithMeta(c, fiber.StatusOK, "daftar user berhasil diambil", users, fiber.Map{
+	return helper.SuccessCursor(c, "daftar user berhasil diambil", users, fiber.Map{
 		"next_cursor": nextCursor,
 		"has_more":    hasMore,
 		"limit":       query.Limit,

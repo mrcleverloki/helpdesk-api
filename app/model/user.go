@@ -28,11 +28,11 @@ type ListQuery struct {
 
 // WebResponse membungkus format JSON response standar.
 type WebResponse struct {
-	Success bool              `json:"success"`
-	Message string            `json:"message"`
-	Data    interface{}       `json:"data,omitempty"`
-	Errors  map[string]string `json:"errors,omitempty"`
-	Meta    *Meta             `json:"meta,omitempty"`
+	Success bool        `json:"success"`
+	Message string      `json:"message"`
+	Data    interface{} `json:"data,omitempty"`
+	Errors  any         `json:"errors,omitempty"`
+	Meta    any         `json:"meta,omitempty"`
 }
 
 // ErrorResponse membungkus format JSON response kegagalan yang seragam.
