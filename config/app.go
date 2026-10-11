@@ -4,24 +4,23 @@ import (
 	"log/slog"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/jackc/pgx/v5/pgxpool"
 
-	"helpdesk-api/app/service"
+	"helpdesk-api/route"
 	"helpdesk-api/helper"
 	"helpdesk-api/middleware"
-	"helpdesk-api/route"
 )
 
 func NewApp(
-	logger *slog.Logger, pool *pgxpool.Pool, userService *service.UserService,
+	logger *slog.Logger, deps route.Dependencies,
 ) *fiber.App {
 	app := fiber.New(fiber.Config{
 		AppName:      GetEnv("APP_NAME", "Helpdesk API - Clean Architecture"),
 		ErrorHandler: newErrorHandler(logger),
+		BodyLimit:    1 * 1024 * 1024, // 1 MB limit
 	})
 
-	middleware.Register(app, logger)
-	route.Register(app, pool, userService)
+	middleware.Register(app, logger, GetEnv("ALLOWED_ORIGINS", ""))
+	route.Register(app, deps)
 
 	app.Use(func(c *fiber.Ctx) error {
 		return helper.Fail(c, fiber.StatusNotFound, "endpoint tidak ditemukan")
