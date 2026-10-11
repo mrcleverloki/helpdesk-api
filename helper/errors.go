@@ -94,3 +94,15 @@ func Internal(cause error) *AppError {
 		Message: "terjadi kesalahan pada server", cause: cause,
 	}
 }
+
+// RequestID mengambil ID request dari Fiber Locals atau Header, 
+// atau mengembalikan string kosong jika tidak ada.
+func RequestID(c *fiber.Ctx) string {
+	if reqID, ok := c.Locals("requestid").(string); ok && reqID != "" {
+		return reqID
+	}
+	if reqID := c.Get("X-Request-ID"); reqID != "" {
+		return reqID
+	}
+	return "-"
+}
