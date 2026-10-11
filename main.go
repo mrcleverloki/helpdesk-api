@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"strings"
@@ -10,6 +11,10 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/gofiber/fiber/v2/middleware/requestid"
+
+	"helpdesk-api/app/repository"
+	"helpdesk-api/config"
+	"helpdesk-api/database"
 )
 
 var metodeBerbody = map[string]bool{
@@ -30,8 +35,22 @@ func requireJSON(c *fiber.Ctx) error {
 }
 
 func main() {
+	config.LoadEnv()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	pool, err := database.NewPool(ctx)
+	if err != nil {
+		log.Fatalf("database: %v", err)
+	}
+	defer pool.Close()
+
+	userRepository := repository.NewUserRepository(pool)
+	userHandler := NewUserHandler(userRepository)
+
 	app := fiber.New(fiber.Config{
-		AppName: "Helpdesk API - Modul 2",
+		AppName: "Helpdesk API - Modul 3",
 		ErrorHandler: func(c *fiber.Ctx, err error) error {
 			status := fiber.StatusInternalServerError
 			pesan := "terjadi kesalahan pada server"
@@ -50,27 +69,35 @@ func main() {
 	app.Use(cors.New())
 
 	app.Get("/", func(c *fiber.Ctx) error {
-		return c.SendString("Hello, Helpdesk API!")
+		return c.SendString("Hello, Helpdesk API with PostgreSQL!")
 	})
 
 	api := app.Group("/api/v1")
 
 	api.Get("/health", func(c *fiber.Ctx) error {
-		return ok(c, "server berjalan", fiber.Map{"timestamp": time.Now()})
+		healthCtx, healthCancel := context.WithTimeout(c.UserContext(), 2*time.Second)
+		defer healthCancel()
+
+		if err := pool.Ping(healthCtx); err != nil {
+			return fail(c, fiber.StatusServiceUnavailable,
+				"database tidak dapat dihubungi")
+		}
+		return ok(c, "server dan database berjalan", fiber.Map{"timestamp": time.Now()})
 	})
 
 	u := api.Group("/users", requireJSON)
-	u.Get("/", listUsers)
-	u.Get("/:id", getUser)
-	u.Post("/", createUser)
-	u.Put("/:id", replaceUser)
-	u.Patch("/:id", patchUser)
-	u.Delete("/:id", deleteUser)
+	u.Get("/", userHandler.List)
+	u.Get("/:id", userHandler.Get)
+	u.Post("/", userHandler.Create)
+	u.Put("/:id", userHandler.Replace)
+	u.Patch("/:id", userHandler.Patch)
+	u.Delete("/:id", userHandler.Delete)
 
 	app.Use(func(c *fiber.Ctx) error {
 		return fail(c, fiber.StatusNotFound, "endpoint tidak ditemukan")
 	})
 
-	fmt.Println("Server berjalan di http://localhost:3000")
-	log.Fatal(app.Listen(":3000"))
+	port := config.GetEnv("APP_PORT", "3000")
+	fmt.Printf("Server berjalan di http://localhost:%s\n", port)
+	log.Fatal(app.Listen(":" + port))
 }
