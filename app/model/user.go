@@ -54,23 +54,23 @@ type Meta struct {
 
 // CreateUserRequest dipakai saat membuat user baru.
 type CreateUserRequest struct {
-	Username string `json:"username"`
-	Email    string `json:"email"`
-	Password string `json:"password"`
-	Role     string `json:"role"`
+	Username string `json:"username" validate:"required,min=3,max=30,alphanum"`
+	Email    string `json:"email"    validate:"required,email,max=120"`
+	Password string `json:"password" validate:"required,min=8,max=72,strongpassword"`
+	Role     string `json:"role"     validate:"required,oneof=admin staff user"`
 }
 
 // ReplaceUserRequest dipakai saat memperbarui seluruh data user (PUT).
 type ReplaceUserRequest struct {
-	Username string `json:"username"`
-	Email    string `json:"email"`
+	Username string `json:"username" validate:"required,min=3,max=30,alphanum"`
+	Email    string `json:"email"    validate:"required,email,max=120"`
 }
 
 // PatchUserRequest dipakai saat memperbarui sebagian data user (PATCH).
 type PatchUserRequest struct {
-	Username *string `json:"username"`
-	Email    *string `json:"email"`
-	IsActive *bool   `json:"is_active"`
+	Username *string `json:"username,omitempty" validate:"omitnil,min=3,max=30,alphanum"`
+	Email    *string `json:"email,omitempty"    validate:"omitnil,email,max=120"`
+	IsActive *bool   `json:"is_active,omitempty"`
 }
 
 // AssignRoleRequest dipakai endpoint PATCH /users/:id/role.
