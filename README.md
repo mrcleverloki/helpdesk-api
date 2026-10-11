@@ -1,53 +1,49 @@
-# Helpdesk API - Go Fiber Backend
+# Helpdesk API
 
-Backend REST API untuk sistem manajemen layanan bantuan (*Helpdesk*) yang dibangun menggunakan **Go**, **Fiber v2**, **PostgreSQL (pgx/v5)**, serta menerapkan **JWT Authentication** dan **Role-Based Access Control (RBAC)**.
+Helpdesk API adalah backend layanan tiket bantuan (*helpdesk*) yang dibangun menggunakan bahasa pemrograman Go dengan framework **Fiber**, database **PostgreSQL**, dan arsitektur berlapis (Clean/Layered Architecture).
 
-## 🚀 Fitur Utama
-- **Authentication**: Registrasi, Login (dengan validasi *bcrypt*), dan pengelolaan Token JWT (`golang-jwt/jwt/v5`).
-- **Authorization & RBAC**: Pembatasan hak akses endpoint berdasarkan peran pengguna (*admin* dan *user*).
-- **Ownership Validation**: Memastikan pengguna hanya dapat mengakses atau memodifikasi data miliknya sendiri (kecuali memiliki hak akses administratif).
-- **Database Pooling**: Koneksi efisien menggunakan `pgxpool`.
-- **Structured Logging**: Menggunakan `log/slog` bawaan Go untuk pencatatan request HTTP.
+## Fitur Utama
 
-## 🛠️ Tech Stack
-- **Language**: Go (Golang)
-- **Framework**: Fiber v2
-- **Database**: PostgreSQL
-- **Driver/Pool**: `pgx/v5`
-- **Security**: `golang-jwt/jwt/v5`, `bcrypt`
+1. **Clean & Modular Architecture**
+   - Pemisahan tanggung jawab yang jelas antara `repository`, `service`, `helper`, `route`, dan `middleware`.
+2. **Autentikasi & Otorisasi (RBAC)**
+   - Autentikasi stateless menggunakan **JSON Web Tokens (JWT)**.
+   - Keamanan sandi dengan **bcrypt** hashing.
+   - *Role-Based Access Control* (RBAC) dan pemeriksaan kepemilikan data (*ownership authorization*).
+3. **Validasi Deklaratif**
+   - Menggunakan pustaka `validator/v10` untuk validasi input request yang bersih dan terstruktur disertai pesan error yang informatif.
+4. **Keyset Cursor Pagination**
+   - Penerapan paginasi berbasis cursor (menggunakan base64 encoding pada `CreatedAt` dan `ID`) untuk menjamin konsistensi dan performa tinggi pada list data yang besar tanpa masalah *offset skip*.
+5. **Flexible Response Handling**
+   - Standarisasi format respons JSON (`WebResponse`) yang mendukung data tunggal, daftar data, error, hingga metadata dinamis (*cursor/pagination meta*).
 
-## ⚙️ Cara Instalasi & Menjalankan Proyek
+## Struktur Proyek
 
-1. **Clone repository ini:**
-   ```bash
-   git clone [https://github.com/mrcleverloki/helpdesk-api.git](https://github.com/mrcleverloki/helpdesk-api.git)
-   cd helpdesk-api
-Konfigurasi Database PostgreSQL:
-Buat database baru dengan nama helpdesk_db:
+```text
+helpdesk-api/
+├── app/
+│   ├── model/       # Definisi struct request, response, dan model data
+│   ├── repository/  # Lapisan akses database PostgreSQL (pgxpool)
+│   └── service/     # Lapisan logika bisnis
+├── helper/          # Helper utilitas (JWT, validation, cursor, response)
+├── middleware/      # Middleware Fiber (Auth, RBAC, JSON, Rate Limiter)
+├── route/           # Pendaftaran rute API endpoint
+├── database/        # Skema dan migrasi database
+├── .env.example     # Contoh variabel lingkungan
+├── AI-USAGE.md      # Catatan kolaborasi pengembangan berbasis AI
+└── main.go          # Titik masuk utama aplikasi (Entrypoint)
+Menjalankan Proyek
+Salin file konfigurasi lingkungan:
 
-SQL
-CREATE DATABASE helpdesk_db;
-Konfigurasi Environment Variable (.env):
-Buat file .env di root direktori dan sesuaikan konfigurasinya:
+Bash
+cp .env.example .env
+Sesuaikan konfigurasi database PostgreSQL pada file .env.
 
-Cuplikan kode
-PORT=3000
-DATABASE_URL=postgres://postgres:postgres@localhost:5432/helpdesk_db?sslmode=disable
-JWT_SECRET=your_super_secret_key_here
-Jalankan Aplikasi:
+Jalankan aplikasi:
 
-Go
+Bash
 go run .
-🧪 Pengujian Endpoint
-Pengujian dapat dilakukan menggunakan alat seperti Thunder Client atau Postman:
+Endpoint Utama
+Auth: /api/v1/auth/register, /api/v1/auth/login, /api/v1/auth/me
 
-POST /api/v1/auth/login - Masuk ke sistem untuk mendapatkan access_token.
-
-GET /api/v1/auth/me - Mendapatkan profil user dan daftar hak akses (permissions).
-
-GET /api/v1/users - Menampilkan daftar user (Khusus Admin).
-
-GET /api/v1/users/:id - Menampilkan detail user berdasarkan ID (Menerapkan aturan ownership).
-
-👤 Author
-Achmad Derajat Wibowo Tamyis (mrcleverloki)
+Users: /api/v1/users (Mendukung keyset cursor pagination via query parameter limit dan cursor)

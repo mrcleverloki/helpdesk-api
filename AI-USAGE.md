@@ -1,12 +1,23 @@
-# Transparansi Penggunaan AI (AI-Usage)
+# AI Usage - Helpdesk API
 
-Dokumen ini menjelaskan bagaimana asisten AI (Gemini) digunakan dalam proses pengembangan proyek **Helpdesk API**.
+Dokumen ini merangkum bentuk kolaborasi dan bantuan AI (Gemini) selama pengembangan proyek *Helpdesk API* secara keseluruhan.
 
-## Cakupan Bantuan AI
-1. **Arsitektur & Boilerplate Code**: Membantu merancang struktur folder proyek berbasis *Clean Architecture* sederhana untuk Go Fiber serta perumusan struktur tabel PostgreSQL.
-2. **Implementasi Keamanan**: Membantu menyusun logika hashing password menggunakan `bcrypt` serta pembuatan token JWT dengan *custom claims* (`Username`, `Role`).
-3. **Debugging & Perbaikan Error**: Membantu menganalisis pesan error saat pengujian koneksi database, penyesuaian query SQL, serta validasi *password hash*.
-4. **Dokumentasi**: Membantu menyusun file `README.md` dan dokumentasi penggunaan proyek secara terstruktur.
+## Cakupan Bantuan AI dalam Proyek
+1. **Inisialisasi & Arsitektur Proyek**
+   - Membantu merancang struktur folder berbasis Clean/Layered Architecture (`repository`, `service`, `handler`, `route`) menggunakan framework Go Fiber.
+   - Menyusun konfigurasi koneksi database PostgreSQL menggunakan `pgxpool` dan penanganan *connection pooling*.
 
-## Kontribusi Pengembang
-Seluruh kode yang dihasilkan melalui konsultasi dengan AI telah melalui proses peninjauan (*review*), pengujian manual menggunakan Thunder Client, serta penyesuaian logika bisnis secara mandiri oleh pengembang (**Achmad Derajat Wibowo Tamyis**).
+2. **Autentikasi & Keamanan (Auth & RBAC)**
+   - Membantu implementasi autentikasi berbasis JSON Web Tokens (JWT), *password hashing* dengan `bcrypt`, serta pembuatan middleware *Role-Based Access Control* (RBAC) dan pemeriksaan kepemilikan data (*ownership authorization*).
+
+3. **Validasi & Penanganan Respons**
+   - Mengintegrasikan validasi deklaratif menggunakan `validator/v10` beserta penyesuaian custom error messages agar lebih ramah pengguna.
+   - Mendesain struktur respons standar (`WebResponse` dan `ErrorResponse`) dengan field fleksibel (`any`) guna mendukung berbagai bentuk data dan metadata.
+
+4. **Pagination Tingkat Lanjut (Keyset Cursor Pagination)**
+   - Membantu merancang logika *keyset cursor pagination* berbasis base64 encoding pada field `CreatedAt` dan `ID` untuk memastikan stabilitas performa data list yang besar tanpa duplikasi atau data yang terlewat.
+   - Menyesuaikan query repository (`FindAllCursor`) dengan PostgreSQL.
+
+## Batasan & Tanggung Jawab Pengembang
+- Seluruh kode yang dihasilkan didiskusikan, di-debug, dan diuji secara mandiri oleh pengembang menggunakan *Thunder Client*.
+- Seluruh logika bisnis, penyesuaian tipe data, dan integrasi akhir sepenuhnya divalidasi dan dikontrol secara manual oleh pengembang.
