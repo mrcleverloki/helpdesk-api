@@ -35,17 +35,32 @@ func IsEmptyPatch(req model.PatchUserRequest) bool {
 	return req.Username == nil && req.Email == nil && req.IsActive == nil
 }
 
-func ApplyPatch(u model.User, req model.PatchUserRequest) model.User {
+func ApplyPatch(u model.User, req model.PatchUserRequest) (model.User, map[string]string) {
+	errs := map[string]string{}
+
 	if req.Username != nil {
-		u.Username = strings.TrimSpace(*req.Username)
+		username := strings.TrimSpace(*req.Username)
+		if username == "" {
+			errs["username"] = "wajib diisi"
+		} else {
+			u.Username = username
+		}
 	}
+
 	if req.Email != nil {
-		u.Email = strings.TrimSpace(*req.Email)
+		email := strings.TrimSpace(*req.Email)
+		if !isValidEmail(email) {
+			errs["email"] = "format email tidak valid"
+		} else {
+			u.Email = email
+		}
 	}
+
 	if req.IsActive != nil {
 		u.IsActive = *req.IsActive
 	}
-	return u
+
+	return u, errs
 }
 
 func CountTotalPages(total, limit int) int {
