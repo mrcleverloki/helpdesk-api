@@ -49,18 +49,15 @@ func (s *AuthService) Login(c *fiber.Ctx) error {
 		return err
 	}
 
-	// Cari user berdasarkan username
 	user, err := s.userRepo.FindByUsername(c.Context(), req.Username)
 	if err != nil {
 		return helper.Fail(c, fiber.StatusUnauthorized, "username atau password salah")
 	}
 
-	// Verifikasi password dengan bcrypt
 	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(req.Password)); err != nil {
 		return helper.Fail(c, fiber.StatusUnauthorized, "username atau password salah")
 	}
 
-	// Generate Access Token menggunakan GenerateAccess(user)
 	accessToken, err := s.jwtManager.GenerateAccess(user)
 	if err != nil {
 		return helper.Fail(c, fiber.StatusInternalServerError, "gagal membuat token akses")
