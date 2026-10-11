@@ -14,7 +14,7 @@ type User struct {
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
-// ListQuery menampung parameter query untuk pagination, pencarian, dan filtering.
+// ListQuery menampung parameter query untuk pagination, pencarian,dan filtering.
 type ListQuery struct {
 	Page     int    `query:"page"`
 	PerPage  int    `query:"per_page"`
@@ -33,6 +33,15 @@ type WebResponse struct {
 	Data    interface{}       `json:"data,omitempty"`
 	Errors  map[string]string `json:"errors,omitempty"`
 	Meta    *Meta             `json:"meta,omitempty"`
+}
+
+// ErrorResponse membungkus format JSON response kegagalan yang seragam.
+type ErrorResponse struct {
+	Success   bool              `json:"success"`
+	Code      string            `json:"code"`
+	Message   string            `json:"message"`
+	Fields    map[string]string `json:"fields,omitempty"`
+	RequestID string            `json:"request_id,omitempty"`
 }
 
 // Meta menampung informasi pagination.
