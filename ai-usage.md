@@ -1,15 +1,14 @@
-# AI Usage Documentation
+# Dokumentasi Penggunaan AI & Kolaborasi
 
-Dalam pengerjaan project **helpdesk-api** ini, penulis menggunakan AI sebagai alat bantu (tools) kolaborasi untuk memahami panduan, merancang arsitektur kode, serta menyusun dokumentasi. Berikut adalah rincian pembagian tugas:
+Dokumentasi ini mencatat kolaborasi antara User dan AI dalam pengembangan proyek Helpdesk API.
 
-### 1. Peran Penulis (User)
-- Menyiapkan lingkungan lokal (macOS, VS Code, Git, dan Thunder Client).
-- Mengeksekusi perintah terminal, menuliskan/menerapkan kode secara bertahap ke dalam project.
-- Menguji fungsionalitas API menggunakan Thunder Client dan memverifikasi hasilnya.
-- Mengontrol alur pengerjaan agar sesuai dengan modul kuliah yang diberikan.
+## Peran Pengguna (User)
+- Menentukan spesifikasi teknis, arsitektur, dan modul praktikum Backend Lanjut.
+- Menguji endpoint menggunakan Thunder Client dan memverifikasi kesesuaian basis data.
+- Menetapkan aturan pengembangan seperti micro-commit bertahap dan pembaruan dokumen.
 
-### 2. Peran AI (Gemini)
-- Membantu merinci penjelasan dari modul praktikum (Modul 1 & Modul 2) ke dalam bahasa yang santai dan mudah dipahami.
-- Merancang struktur kode Go Fiber secara bertahap dan modular (`main.go`, `model.go`, `helper.go`, dan `handler.go`).
-- Menyediakan implementasi praktik terbaik HTTP semantics (status code, perbedaan PUT vs PATCH, query handling, dan middleware).
-- Menyusun dokumentasi pendukung seperti README dan format pelaporan project.
+## Peran AI
+- Membantu menyusun restrukturisasi folder Clean Architecture.
+- Membantu memisahkan business rules murni dari HTTP context (fiber.Ctx).
+- Membantu menyusun structured logging dengan slog dan lumberjack.
+- Menyediakan perintah terminal dan panduan langkah demi langkah.
