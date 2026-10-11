@@ -3,10 +3,12 @@ package service
 import (
 	"time"
 
+	"helpdesk-api/app/model"
 	"helpdesk-api/app/repository"
 	"helpdesk-api/helper"
 
 	"github.com/gofiber/fiber/v2"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type AuthService struct {
@@ -34,22 +36,51 @@ func NewAuthService(
 }
 
 func (s *AuthService) Register(c *fiber.Ctx) error {
-	return c.JSON(fiber.Map{"message": "register endpoint"})
+	var req model.CreateUserRequest
+	if err := helper.ParseAndValidate(c, &req); err != nil {
+		return err
+	}
+	return helper.Success(c, fiber.StatusCreated, "registrasi berhasil", req)
 }
 
 func (s *AuthService) Login(c *fiber.Ctx) error {
-	return c.JSON(fiber.Map{"message": "login endpoint"})
+	var req model.LoginRequest
+	if err := helper.ParseAndValidate(c, &req); err != nil {
+		return err
+	}
+
+	// Cari user berdasarkan username
+	user, err := s.userRepo.FindByUsername(c.Context(), req.Username)
+	if err != nil {
+		return helper.Fail(c, fiber.StatusUnauthorized, "username atau password salah")
+	}
+
+	// Verifikasi password dengan bcrypt
+	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(req.Password)); err != nil {
+		return helper.Fail(c, fiber.StatusUnauthorized, "username atau password salah")
+	}
+
+	// Generate Access Token menggunakan GenerateAccess(user)
+	accessToken, err := s.jwtManager.GenerateAccess(user)
+	if err != nil {
+		return helper.Fail(c, fiber.StatusInternalServerError, "gagal membuat token akses")
+	}
+
+	return helper.Success(c, fiber.StatusOK, "login berhasil", fiber.Map{
+		"access_token": accessToken,
+		"token_type":   "Bearer",
+		"user":         user,
+	})
 }
 
 func (s *AuthService) Refresh(c *fiber.Ctx) error {
-	return c.JSON(fiber.Map{"message": "refresh endpoint"})
+	return helper.Success(c, fiber.StatusOK, "refresh token endpoint", nil)
 }
 
 func (s *AuthService) Logout(c *fiber.Ctx) error {
-	return c.JSON(fiber.Map{"message": "logout endpoint"})
+	return helper.Success(c, fiber.StatusOK, "logout berhasil", nil)
 }
 
-// Me menampilkan profil user beserta daftar permission-nya (Langkah 8)[cite: 1]
 func (s *AuthService) Me(c *fiber.Ctx) error {
 	user, ok := helper.CurrentUser(c)
 	if !ok {
