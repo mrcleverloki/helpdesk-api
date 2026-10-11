@@ -23,18 +23,44 @@ func NewUserService(
 }
 
 func (s *UserService) List(c *fiber.Ctx) error {
-	var query model.ListQuery
+	var query model.CursorQuery
 	if err := c.QueryParser(&query); err != nil {
-		return helper.Fail(c, fiber.StatusBadRequest, "parameter query tidak valid")
+		return helper.BadRequest("parameter query tidak valid")
 	}
 
-	users, total, err := s.repo.FindAll(c.Context(), query)
+	if query.Limit <= 0 {
+		query.Limit = 10
+	}
+
+	var cursor model.Cursor
+	if query.Cursor != "" {
+		decoded, err := helper.DecodeCursor(query.Cursor)
+		if err != nil {
+			return helper.BadRequest("cursor tidak valid")
+		}
+		cursor = decoded
+	}
+
+	users, err := s.repo.FindAllCursor(c.Context(), query, cursor)
 	if err != nil {
-		return helper.Fail(c, fiber.StatusInternalServerError, "gagal mengambil daftar user")
+		return helper.Internal(err)
 	}
 
-	meta := helper.CalculateMeta(query.Page, query.PerPage, int(total))
-	return helper.SuccessWithMeta(c, fiber.StatusOK, "daftar user berhasil diambil", users, meta)
+	var nextCursor string
+	hasMore := false
+
+	if len(users) > query.Limit {
+		hasMore = true
+		users = users[:query.Limit] // Potong kelebihan 1 data
+		lastUser := users[len(users)-1]
+		nextCursor = helper.EncodeCursor(lastUser.CreatedAt, lastUser.ID)
+	}
+
+	return helper.SuccessWithMeta(c, fiber.StatusOK, "daftar user berhasil diambil", users, fiber.Map{
+		"next_cursor": nextCursor,
+		"has_more":    hasMore,
+		"limit":       query.Limit,
+	})
 }
 
 func (s *UserService) Create(c *fiber.Ctx) error {
@@ -43,29 +69,27 @@ func (s *UserService) Create(c *fiber.Ctx) error {
 		return err
 	}
 
-	// Logic create user...
 	return helper.Success(c, fiber.StatusCreated, "user berhasil dibuat", req)
 }
 
 func (s *UserService) Get(c *fiber.Ctx) error {
 	currentUser, ok := helper.CurrentUser(c)
 	if !ok {
-		return helper.Fail(c, fiber.StatusUnauthorized, "belum terautentikasi")
+		return helper.Unauthorized("belum terautentikasi")
 	}
 
 	id, err := strconv.Atoi(c.Params("id"))
 	if err != nil {
-		return helper.Fail(c, fiber.StatusBadRequest, "ID user tidak valid")
+		return helper.BadRequest("ID user tidak valid")
 	}
 
-	// Validasi kepemilikan atau hak akses menyeluruh (user:read:any)
 	if !CanAccessUser(currentUser, id, s.perms, "user:read:any") {
-		return helper.Fail(c, fiber.StatusForbidden, "akses ditolak ke data user lain")
+		return helper.Forbidden("akses ditolak ke data user lain")
 	}
 
 	user, err := s.repo.FindByID(c.Context(), id)
 	if err != nil {
-		return helper.Fail(c, fiber.StatusNotFound, "user tidak ditemukan")
+		return helper.NotFound("user tidak ditemukan")
 	}
 
 	return helper.Success(c, fiber.StatusOK, "user berhasil diambil", user)
@@ -74,16 +98,16 @@ func (s *UserService) Get(c *fiber.Ctx) error {
 func (s *UserService) Replace(c *fiber.Ctx) error {
 	currentUser, ok := helper.CurrentUser(c)
 	if !ok {
-		return helper.Fail(c, fiber.StatusUnauthorized, "belum terautentikasi")
+		return helper.Unauthorized("belum terautentikasi")
 	}
 
 	id, err := strconv.Atoi(c.Params("id"))
 	if err != nil {
-		return helper.Fail(c, fiber.StatusBadRequest, "ID user tidak valid")
+		return helper.BadRequest("ID user tidak valid")
 	}
 
 	if !CanAccessUser(currentUser, id, s.perms, "user:update:any") {
-		return helper.Fail(c, fiber.StatusForbidden, "akses ditolak mengubah data user lain")
+		return helper.Forbidden("akses ditolak mengubah data user lain")
 	}
 
 	var req model.ReplaceUserRequest
@@ -97,16 +121,16 @@ func (s *UserService) Replace(c *fiber.Ctx) error {
 func (s *UserService) Patch(c *fiber.Ctx) error {
 	currentUser, ok := helper.CurrentUser(c)
 	if !ok {
-		return helper.Fail(c, fiber.StatusUnauthorized, "belum terautentikasi")
+		return helper.Unauthorized("belum terautentikasi")
 	}
 
 	id, err := strconv.Atoi(c.Params("id"))
 	if err != nil {
-		return helper.Fail(c, fiber.StatusBadRequest, "ID user tidak valid")
+		return helper.BadRequest("ID user tidak valid")
 	}
 
 	if !CanAccessUser(currentUser, id, s.perms, "user:update:any") {
-		return helper.Fail(c, fiber.StatusForbidden, "akses ditolak mengubah data user lain")
+		return helper.Forbidden("akses ditolak mengubah data user lain")
 	}
 
 	var req model.PatchUserRequest
@@ -120,7 +144,7 @@ func (s *UserService) Patch(c *fiber.Ctx) error {
 func (s *UserService) Delete(c *fiber.Ctx) error {
 	id, err := strconv.Atoi(c.Params("id"))
 	if err != nil {
-		return helper.Fail(c, fiber.StatusBadRequest, "ID user tidak valid")
+		return helper.BadRequest("ID user tidak valid")
 	}
 
 	return helper.Success(c, fiber.StatusOK, "user berhasil dihapus", fiber.Map{"id": id})
@@ -129,12 +153,12 @@ func (s *UserService) Delete(c *fiber.Ctx) error {
 func (s *UserService) AssignRole(c *fiber.Ctx) error {
 	currentUser, ok := helper.CurrentUser(c)
 	if !ok {
-		return helper.Fail(c, fiber.StatusUnauthorized, "belum terautentikasi")
+		return helper.Unauthorized("belum terautentikasi")
 	}
 
 	id, err := strconv.Atoi(c.Params("id"))
 	if err != nil {
-		return helper.Fail(c, fiber.StatusBadRequest, "ID user tidak valid")
+		return helper.BadRequest("ID user tidak valid")
 	}
 
 	var req model.AssignRoleRequest
@@ -142,9 +166,8 @@ func (s *UserService) AssignRole(c *fiber.Ctx) error {
 		return err
 	}
 
-	// Validasi aturan role assignment (tidak boleh ubah role sendiri & role harus valid)
 	if errs := ValidateAssignRole(currentUser, id, req, s.perms); len(errs) > 0 {
-		return helper.FailWithErrors(c, fiber.StatusUnprocessableEntity, "validasi gagal", errs)
+		return helper.Validation(errs)
 	}
 
 	return helper.Success(c, fiber.StatusOK, "role berhasil diubah", fiber.Map{"target_id": id, "role": req.Role})
