@@ -1,57 +1,38 @@
 package model
 
-import (
-	"time"
-)
+import "time"
 
+// User merepresentasikan entitas user di database.
 type User struct {
 	ID        int       `json:"id"`
 	Username  string    `json:"username"`
 	Email     string    `json:"email"`
-	Password  string    `json:"-"`      // Tidak pernah keluar sebagai JSON
-	Role      string    `json:"role"`   // Role user (user/admin)
-	IsActive  bool      `json:"is_active"`
+	Role      string    `json:"role"`
 	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
 }
 
+// CreateUserRequest dipakai saat membuat user baru.
 type CreateUserRequest struct {
 	Username string `json:"username"`
 	Email    string `json:"email"`
 	Password string `json:"password"`
+	Role     string `json:"role"`
 }
 
+// ReplaceUserRequest dipakai saat memperbarui seluruh data user (PUT).
 type ReplaceUserRequest struct {
 	Username string `json:"username"`
 	Email    string `json:"email"`
-	IsActive bool   `json:"is_active"`
 }
 
+// PatchUserRequest dipakai saat memperbarui sebagian data user (PATCH).
 type PatchUserRequest struct {
 	Username *string `json:"username"`
 	Email    *string `json:"email"`
-	IsActive *bool   `json:"is_active"`
 }
 
-type ListQuery struct {
-	Page     int
-	Limit    int
-	Search   string
-	Sort     string
-	Order    string
-	IsActive *bool
-}
-
-type Meta struct {
-	Page       int `json:"page"`
-	Limit      int `json:"limit"`
-	Total      int `json:"total"`
-	TotalPages int `json:"total_pages"`
-}
-
-type WebResponse struct {
-	Success bool              `json:"success"`
-	Message string            `json:"message"`
-	Data    any               `json:"data,omitempty"`
-	Meta    *Meta             `json:"meta,omitempty"`
-	Errors  map[string]string `json:"errors,omitempty"`
+// AssignRoleRequest dipakai endpoint PATCH /users/:id/role.
+type AssignRoleRequest struct {
+	Role string `json:"role"`
 }
