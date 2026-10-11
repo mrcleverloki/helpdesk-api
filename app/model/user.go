@@ -77,3 +77,18 @@ type PatchUserRequest struct {
 type AssignRoleRequest struct {
 	Role string `json:"role"`
 }
+
+// Cursor menampung nilai penanda untuk pagination berbasis kunci.
+type Cursor struct {
+	CreatedAt time.Time `json:"created_at"`
+	ID        int       `json:"id"`
+}
+
+// CursorQuery menampung parameter query untuk cursor pagination.
+type CursorQuery struct {
+	Limit  int    `query:"limit"`
+	Cursor string `query:"cursor"`
+	Search string `query:"search"`
+	Sort   string `query:"sort"`
+	Order  string `query:"order"`
+}
