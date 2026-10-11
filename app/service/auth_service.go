@@ -51,16 +51,16 @@ func (s *AuthService) Login(c *fiber.Ctx) error {
 
 	user, err := s.userRepo.FindByUsername(c.Context(), req.Username)
 	if err != nil {
-		return helper.Fail(c, fiber.StatusUnauthorized, "username atau password salah")
+		return helper.Unauthorized("username atau password salah")
 	}
 
 	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(req.Password)); err != nil {
-		return helper.Fail(c, fiber.StatusUnauthorized, "username atau password salah")
+		return helper.Unauthorized("username atau password salah")
 	}
 
 	accessToken, err := s.jwtManager.GenerateAccess(user)
 	if err != nil {
-		return helper.Fail(c, fiber.StatusInternalServerError, "gagal membuat token akses")
+		return helper.Internal(err)
 	}
 
 	return helper.Success(c, fiber.StatusOK, "login berhasil", fiber.Map{
@@ -81,7 +81,7 @@ func (s *AuthService) Logout(c *fiber.Ctx) error {
 func (s *AuthService) Me(c *fiber.Ctx) error {
 	user, ok := helper.CurrentUser(c)
 	if !ok {
-		return helper.Fail(c, fiber.StatusUnauthorized, "belum terautentikasi")
+		return helper.Unauthorized("belum terautentikasi")
 	}
 
 	return helper.Success(c, fiber.StatusOK, "profil berhasil diambil", fiber.Map{
