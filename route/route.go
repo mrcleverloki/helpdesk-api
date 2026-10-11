@@ -33,10 +33,29 @@ func Register(app *fiber.App, deps Dependencies) {
 	auth.Post("/logout", deps.AuthService.Logout)
 	auth.Get("/me", middleware.RequireAuth(deps.JWT), deps.AuthService.Me)
 
-	// --- wajib login ---
+	// --- wajib login, hak akses diperiksa per endpoint ---
 	users := api.Group("/users",
 		middleware.RequireJSON,
 		middleware.RequireAuth(deps.JWT))
 
-	_ = users
+	perms := deps.Permissions
+
+	// Hak dapat diputuskan tanpa melihat data -> middleware.
+	users.Get("/",
+		middleware.RequirePermission(perms, "user:list"),
+		deps.UserService.List)
+	users.Post("/",
+		middleware.RequirePermission(perms, "user:update:any"),
+		deps.UserService.Create)
+	users.Delete("/:id",
+		middleware.RequirePermission(perms, "user:delete"),
+		deps.UserService.Delete)
+	users.Patch("/:id/role",
+		middleware.RequirePermission(perms, "role:assign"),
+		deps.UserService.AssignRole)
+
+	// Hak bergantung pada kepemilikan data -> diperiksa di service.
+	users.Get("/:id", deps.UserService.Get)
+	users.Put("/:id", deps.UserService.Replace)
+	users.Patch("/:id", deps.UserService.Patch)
 }
