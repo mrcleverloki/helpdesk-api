@@ -122,14 +122,3 @@ func messageFor(fe validator.FieldError) string {
 		return "tidak memenuhi aturan " + fe.Tag()
 	}
 }
-
-// ParseAndValidate membantu membaca body request dan langsung memvalidasinya
-func ParseAndValidate(c *fiber.Ctx, out any) error {
-	if err := c.BodyParser(out); err != nil {
-		return BadRequest("format json tidak valid")
-	}
-	if errs := ValidateStruct(out); errs != nil {
-		return Validation(errs)
-	}
-	return nil
-}
